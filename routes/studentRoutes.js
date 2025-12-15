@@ -6,7 +6,6 @@ const {
   updateStudent,
   deleteStudent,
 } = require("../controllers/studentController");
-
 const { protect } = require("../middleware/authMiddleware");
 
 router.post("/", protect, createStudent);

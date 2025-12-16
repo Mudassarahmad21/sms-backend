@@ -1,16 +1,12 @@
-const express = require("express");
-const router = express.Router();
-const {
-  createStudent,
-  getStudents,
-  updateStudent,
-  deleteStudent,
-} = require("../controllers/studentController");
+const router = require("express").Router();
 const { protect } = require("../middleware/authMiddleware");
+const ctrl = require("../controllers/studentController");
 
-router.post("/", protect, createStudent);
-router.get("/", protect, getStudents);
-router.put("/:id", protect, updateStudent);
-router.delete("/:id", protect, deleteStudent);
+router.use(protect);
+
+router.get("/", ctrl.getStudents);
+router.post("/", ctrl.createStudent);
+router.put("/:id", ctrl.updateStudent);
+router.delete("/:id", ctrl.deleteStudent);
 
 module.exports = router;

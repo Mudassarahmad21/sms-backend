@@ -1,9 +1,11 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 
+// Helper: generate a signed JWT
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 
+// POST /api/auth/register
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -28,6 +30,7 @@ exports.register = async (req, res) => {
   }
 };
 
+// POST /api/auth/login
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;

@@ -1,6 +1,5 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
@@ -12,26 +11,31 @@ const app = express();
 // Security headers
 app.use(helmet());
 
-// CORS setup — allow only listed origins
+// ✅ CORS fix — manually set headers on EVERY request including preflight
+// This must be the very first middleware so Vercel doesn't block it
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")
   : [];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (e.g. mobile apps, curl, Postman)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // handle preflight requests
+  // If the request origin is in our allowed list, allow it
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  // Handle preflight requests — browser sends OPTIONS before the real request
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204); // 204 = No Content, preflight accepted
+  }
+
+  next();
+});
 
 // Parse incoming JSON
 app.use(express.json());

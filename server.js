@@ -11,7 +11,7 @@ const app = express();
 // Security headers
 app.use(helmet());
 
-// ✅ CORS fix — manually set headers on EVERY request including preflight
+//  CORS fix — manually set headers on EVERY request including preflight
 // This must be the very first middleware so Vercel doesn't block it
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")

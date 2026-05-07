@@ -3,44 +3,37 @@ const express = require("express");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
-const authRoutes = require("./routes/authRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 
 const app = express();
 
-// Security headers
+// ── Security headers
 app.use(helmet());
 
-//  CORS fix — manually set headers on EVERY request including preflight
-// This must be the very first middleware so Vercel doesn't block it
+// ── CORS — must be first
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
   : [];
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-
-  // If the request origin is in our allowed list, allow it
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
+  if (!origin || allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
   }
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS",
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-
-  // Handle preflight requests — browser sends OPTIONS before the real request
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204); // 204 = No Content, preflight accepted
-  }
-
+  if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
 
-// Parse incoming JSON
+// ── Body parser
 app.use(express.json());
 
-// Rate limiting — max 300 requests per 15 minutes per IP
+// ── Rate limiting — 300 req / 15 min per IP
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -48,20 +41,23 @@ app.use(
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: "Too many requests, please try again later." },
-  })
+  }),
 );
 
-// Connect to MongoDB
+// ── Database
 connectDB();
 
-// Routes
-app.use("/api/auth", authRoutes);
+// ── Routes
 app.use("/api/students", studentRoutes);
 
-// Health check
-app.get("/", (req, res) => {
-  res.send("API is running...");
-});
+// ── Health check
+app.get("/", (_req, res) =>
+  res.json({ status: "ok", message: "SMS API running" }),
+);
 
+// ── 404 handler
+app.use((_req, res) => res.status(404).json({ message: "Route not found" }));
+
+// ── Start
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀  Server running on port ${PORT}`));
